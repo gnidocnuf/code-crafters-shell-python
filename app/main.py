@@ -58,7 +58,24 @@ def main():
         _, content = decompressed_data.split(b'\0', 1)
       
         sys.stdout.buffer.write(content)
-
+    
+    elif command == "hash-object":
+        if len(sys.argv) < 4:
+            print("Usage: hash-object <file>")
+            return
+        for i in range(1, len(sys.argv)):
+            print(f"Command {i}: {sys.argv[i]}")
+        # file_path = sys.argv[2]
+        # if not os.path.exists(file_path):
+        #     print(f"File {file_path} not found")
+        #     return
+        # with open(file_path, "rb") as f:
+        #     data = f.read()
+        # object_id = hash(data)
+        # object_path = os.path.join(".git", "objects", str(object_id))
+        # with open(object_path, "wb") as f:
+        #     f.write(data)
+        # print(object_id)
     else:
         raise RuntimeError(f"Unknown command #{command}")
 
