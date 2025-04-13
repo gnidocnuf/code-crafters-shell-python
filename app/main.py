@@ -64,6 +64,47 @@ def main():
             data = zlib.compress(data)
             f.write(data)   
         print(object_id)
+    elif command == "ls-tree":
+        if len(sys.argv) < 4:
+            print("Usage: ls-tree <object-id>")
+            return
+        object_id = sys.argv[3]
+        object_path = os.path.join(".git", "objects", object_id[:2], object_id[2:])
+        if not os.path.exists(object_path):
+            print(f"Object {object_id} not found")
+            return
+        with open(object_path, "rb") as f:
+            data = f.read()
+
+        # Decompress the data
+        decompressed_data = zlib.decompress(data)
+        # Split the decompressed data into header and content
+        header, content = decompressed_data.split(b'\0', 1)
+
+        # make sure the object is a tree
+        if not header.startswith(b"tree"):
+            print(f"Object {object_id} is not a tree")
+            return
+        
+        # parse tree content
+        index = 0 
+        while index < len(content):
+            # Extract the mode (e.g., "40000" for directories or "100644" for files)
+            mode_end = content.find(b' ', index)
+            mode = content[index:mode_end].decode()
+
+            # Extract the file name
+            name_end = content.find(b'\0', mode_end + 1)
+            name = content[mode_end + 1:name_end].decode()
+
+            # Extract the hash (20 bytes after the null terminator)
+            sha = content[name_end + 1:name_end + 21]
+            sha_hex = sha.hex()
+
+            print(f"{name}")
+            # Move to the next entry
+            index = name_end + 21
+
     else:
         raise RuntimeError(f"Unknown command #{command}")
 
