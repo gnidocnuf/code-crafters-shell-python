@@ -1,6 +1,7 @@
 import sys
 import os
 import zlib
+import hashlib
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -9,9 +10,6 @@ def main():
     #Uncomment this block to pass the first stage
     
     command = sys.argv[1]
-    # print(f"Commands: {sys.argv}")
-    # for i in enumerate(sys.argv):
-    #     print(f"Command {i}")
 
     # object_id = ""
     if command == "init":
@@ -21,23 +19,6 @@ def main():
         with open(".git/HEAD", "w") as f:
             f.write("ref: refs/heads/main\n")
         print("Initialized git directory")
-    # elif command == "hash-object":  
-    #     if len(sys.argv) < 3:
-    #         print("Usage: hash-object <file>")
-    #         return
-    #     file_path = sys.argv[2]
-    #     if not os.path.exists(file_path):
-    #         print(f"File {file_path} not found")
-    #         return
-    #     with open(file_path, "rb") as f:
-    #         data = f.read()
-    #     object_id = hash(data)
-    #     object_path = os.path.join(".git", "objects", str(object_id))
-    #     with open(object_path, "wb") as f:
-    #         f.write(data)
-    #     print(f"Object {object_id} created at {object_path}")
-    #     print(f"{object_id} created at path:  {object_path}")
-    
     elif command == "cat-file":
         if len(sys.argv) < 4:
             print("Usage: cat-file <object-id>")
@@ -63,19 +44,26 @@ def main():
         if len(sys.argv) < 4:
             print("Usage: hash-object <file>")
             return
-        for i in range(1, len(sys.argv)):
-            print(f"Command {i}: {sys.argv[i]}")
-        # file_path = sys.argv[2]
-        # if not os.path.exists(file_path):
-        #     print(f"File {file_path} not found")
-        #     return
-        # with open(file_path, "rb") as f:
-        #     data = f.read()
-        # object_id = hash(data)
-        # object_path = os.path.join(".git", "objects", str(object_id))
-        # with open(object_path, "wb") as f:
-        #     f.write(data)
-        # print(object_id)
+        if not os.path.exists(sys.argv[3]): 
+            print(f"File {sys.argv[3]} not found")
+            return
+        with open(sys.argv[3], "rb") as f:
+            data = f.read()
+
+        # create the header for git object
+        header = f"blob {len(data)}\0".encode()
+        # concatenate the header and data
+        data = header + data
+        upper_dir = os.path.join(".git", "objects", str(hashlib.sha1(data).hexdigest()[:2]))
+        object_id = hashlib.sha1(data).hexdigest()
+        object_path = os.path.join(".git", "objects", object_id[:2], object_id[2:])    
+        # create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(object_path), exist_ok=True)
+        # write the data to the object file
+        with open(object_path, "wb") as f:
+            data = zlib.compress(data)
+            f.write(data)   
+        print(object_id)
     else:
         raise RuntimeError(f"Unknown command #{command}")
 
